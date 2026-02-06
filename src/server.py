@@ -11,8 +11,7 @@ import numpy as np
 import numexpr
 from custom_fx import *
 from typing import Any
-from mcp_ui_server import create_ui_resource, UIMetadataKey
-from ui import DASHBOARD_HTML
+from mcp_ui.core import create_ui_resource, UIMetadataKey
 
 mcp = FastMCP("moviepy-mcp")
 
@@ -823,7 +822,7 @@ def ui_dashboard() -> Any:
     """Launch the MoviePy MCP Dashboard."""
     return create_ui_resource({
         "uri": "ui://dashboard",
-        "content": {"type": "rawHtml", "htmlString": DASHBOARD_HTML},
+        "content": {"type": "rawHtml", "htmlString": "<h1>Dashboard Placeholder</h1>"},
         "encoding": "text",
         "uiMetadata": {
             UIMetadataKey.PREFERRED_FRAME_SIZE: ["800px", "600px"]
@@ -948,11 +947,15 @@ def demonstrate_kaleidoscope_cube(
         f"Then, save the resulting video as 'kaleidoscope_cube_demo.mp4'."
     )
 
-def main(transport: str) -> str:
-    if transport is not ("stdio"):
-        mcp.run(transport="http", host="0.0.0.0", port=8080)
+def main(transport: str = "stdio"):
+    if transport != "stdio":
+        mcp.run(transport="sse")
     else:
         mcp.run(transport="stdio")
 
+import sys
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1:
+        main(sys.argv[1])
+    else:
+        main()
