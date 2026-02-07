@@ -2,16 +2,12 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import litellm
-import os
 import json
 import ast
 import asyncio
 from typing import List, Dict, Any, Optional
 
-# To ensure server.py is importable
-import sys
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from server import mcp
+from .server import mcp
 
 app = FastAPI()
 
