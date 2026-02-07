@@ -245,7 +245,9 @@ def tools_ffmpeg_extract_subclip(filename: str, start_time: float, end_time: flo
     if not os.path.exists(filename):
         raise FileNotFoundError(f"File {filename} not found.")
     if targetname:
-        targetname = validate_path(targetname)
+        targetname = validate_write_path(targetname)
+    else:
+        targetname = str(OUTPUT_DIR / f"{Path(filename).stem}_subclip.mp4")
     if start_time >= end_time:
         raise ValueError("start_time must be less than end_time")
     ffmpeg_extract_subclip(filename, start_time, end_time, outputfile=targetname)
