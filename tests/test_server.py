@@ -2,7 +2,7 @@ import unittest
 import os
 import tempfile
 import sys
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from pathlib import Path
 
 # Add src to sys.path to allow importing server
@@ -24,7 +24,9 @@ fastmcp_mock.FastMCP.return_value = mock_mcp_instance
 
 # Apply mocks to sys.modules
 sys.modules['fastmcp'] = fastmcp_mock
-sys.modules['moviepy'] = MagicMock()
+mock_moviepy = MagicMock()
+mock_moviepy.__all__ = ["ColorClip", "ImageClip", "TextClip", "CompositeVideoClip", "AudioFileClip", "VideoFileClip"]
+sys.modules['moviepy'] = mock_moviepy
 sys.modules['moviepy.video'] = MagicMock()
 sys.modules['moviepy.video.tools'] = MagicMock()
 sys.modules['moviepy.video.tools.drawing'] = MagicMock()
@@ -40,7 +42,7 @@ sys.modules['numpy'] = MagicMock()
 sys.modules['numexpr'] = MagicMock()
 sys.modules['pydantic'] = MagicMock()
 
-from server import validate_path, validate_write_path, OUTPUT_DIR
+from server import validate_path, validate_write_path, OUTPUT_DIR, color_clip  # noqa: E402
 
 class TestValidatePath(unittest.TestCase):
     def setUp(self):
@@ -203,5 +205,57 @@ class TestValidateWritePath(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_write_path(filename)
 
+
+class TestColorClip(unittest.TestCase):
+    def test_color_clip_valid(self):
+        """Test creating a valid color clip."""
+        size = [1920, 1080]
+        color = [255, 0, 0]
+        duration = 5.0
+
+        with patch('server.register_clip') as mock_register, \
+             patch('server.ColorClip') as mock_color_clip_cls:
+
+            mock_register.return_value = "test_clip_id"
+            result = color_clip(size, color, duration)
+
+            self.assertEqual(result, "test_clip_id")
+            mock_color_clip_cls.assert_called_once()
+
+            # Verify arguments passed to ColorClip
+            _, kwargs = mock_color_clip_cls.call_args
+            self.assertEqual(kwargs['size'], (1920, 1080))
+            self.assertEqual(kwargs['duration'], 5.0)
+
+    def test_color_clip_invalid_duration(self):
+        """Test that non-positive duration raises ValueError."""
+        size = [100, 100]
+        color = [0, 0, 0]
+        with self.assertRaisesRegex(ValueError, "Duration must be positive"):
+            color_clip(size, color, duration=0)
+
+        with self.assertRaisesRegex(ValueError, "Duration must be positive"):
+            color_clip(size, color, duration=-1.0)
+
+    def test_color_clip_invalid_size_empty(self):
+        """Test that empty size raises ValueError."""
+        with self.assertRaisesRegex(ValueError, "Size must be a list of two positive integers"):
+            color_clip([], [0,0,0])
+
+    def test_color_clip_invalid_size_len(self):
+        """Test that size with wrong length raises ValueError."""
+        with self.assertRaisesRegex(ValueError, "Size must be a list of two positive integers"):
+            color_clip([100], [0,0,0])
+
+        with self.assertRaisesRegex(ValueError, "Size must be a list of two positive integers"):
+            color_clip([100, 100, 100], [0,0,0])
+
+    def test_color_clip_invalid_size_negative(self):
+        """Test that non-positive dimensions raise ValueError."""
+        with self.assertRaisesRegex(ValueError, "Size must be a list of two positive integers"):
+            color_clip([-100, 100], [0,0,0])
+
+        with self.assertRaisesRegex(ValueError, "Size must be a list of two positive integers"):
+            color_clip([100, 0], [0,0,0])
 if __name__ == '__main__':
     unittest.main()
