@@ -57,6 +57,10 @@ class RotatingCube(Effect):
 
     def apply(self, clip):
         def process_frame(get_frame, t):
+            """
+            Processes a single frame.
+            Named process_frame instead of filter to avoid shadowing the built-in filter function.
+            """
             raw_frame = get_frame(t)
             frame = self._apply_quad_mirror(raw_frame) if self.mirror else raw_frame
             h, w = frame.shape[:2]
