@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Send, Settings, User, Bot, Loader2 } from "lucide-react"
+import { Send, Settings, User, Bot, Loader2, Sparkles } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,10 +17,14 @@ import {
 
 // Initial welcome message
 const INITIAL_MESSAGES = [
-  { role: "assistant", content: "Hello! I am your AI Video Editor Assistant. I can help you edit videos using MoviePy. Please configure your API keys in settings." }
+  { role: "assistant", content: "Hello! I am your AI Video Copilot. How can I help you edit today?" }
 ]
 
-export function Chat() {
+interface ChatPanelProps {
+  className?: string
+}
+
+export function ChatPanel({ className }: ChatPanelProps) {
   const [messages, setMessages] = React.useState(INITIAL_MESSAGES)
   const [input, setInput] = React.useState("")
   const [isLoading, setIsLoading] = React.useState(false)
@@ -34,9 +38,11 @@ export function Chat() {
   })
 
   React.useEffect(() => {
-    const stored = localStorage.getItem("mcp_api_keys")
-    if (stored) {
-        setApiKeys(JSON.parse(stored))
+    if (typeof window !== "undefined") {
+        const stored = localStorage.getItem("mcp_api_keys")
+        if (stored) {
+            setApiKeys(JSON.parse(stored))
+        }
     }
   }, [])
 
@@ -78,8 +84,8 @@ export function Chat() {
 
         const data = await res.json()
         setMessages(prev => [...prev, { role: "assistant", content: data.content }])
-    } catch (error: any) {
-        setMessages(prev => [...prev, { role: "assistant", content: "Error: " + error.message }])
+    } catch (error: unknown) {
+        setMessages(prev => [...prev, { role: "assistant", content: "Error: " + ((error as Error).message || "Unknown error") }])
     } finally {
         setIsLoading(false)
     }
@@ -93,74 +99,81 @@ export function Chat() {
   }
 
   return (
-    <div className="flex h-full flex-col border-l bg-muted/10">
-      <div className="flex items-center justify-between px-4 py-3 border-b bg-background">
-        <h3 className="font-semibold flex items-center gap-2"><Bot className="h-4 w-4" /> AI Assistant</h3>
+    <div className={`flex h-full flex-col bg-background border-l border-zinc-800/50 ${className}`}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/50 bg-muted/20">
+        <h3 className="text-sm font-medium flex items-center gap-2 text-zinc-300">
+            <Sparkles className="h-4 w-4 text-purple-400" /> Copilot
+        </h3>
         <Dialog open={openSettings} onOpenChange={setOpenSettings}>
             <DialogTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-zinc-400 hover:text-white">
                     <Settings className="h-4 w-4" />
                 </Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>API Keys Configuration</DialogTitle>
+                    <DialogTitle>AI Model Configuration</DialogTitle>
                     <DialogDescription>
-                        Enter your API keys to enable LLM capabilities. These are stored locally in your browser.
+                        Configure your API keys for the best experience.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                     <div className="grid gap-2">
-                        <label htmlFor="openai" className="text-sm font-medium">OpenAI API Key</label>
+                        <label htmlFor="openai" className="text-xs font-medium text-muted-foreground">OpenAI API Key</label>
                         <Input
                             id="openai"
                             type="password"
                             value={apiKeys.openai}
                             onChange={(e) => setApiKeys({...apiKeys, openai: e.target.value})}
                             placeholder="sk-..."
+                            className="bg-muted border-none"
                         />
                     </div>
                     <div className="grid gap-2">
-                         <label htmlFor="anthropic" className="text-sm font-medium">Anthropic API Key</label>
+                         <label htmlFor="anthropic" className="text-xs font-medium text-muted-foreground">Anthropic API Key</label>
                         <Input
                             id="anthropic"
                             type="password"
                             value={apiKeys.anthropic}
                             onChange={(e) => setApiKeys({...apiKeys, anthropic: e.target.value})}
                             placeholder="sk-ant-..."
+                            className="bg-muted border-none"
                         />
                     </div>
                     <div className="grid gap-2">
-                         <label htmlFor="gemini" className="text-sm font-medium">Gemini API Key</label>
+                         <label htmlFor="gemini" className="text-xs font-medium text-muted-foreground">Gemini API Key</label>
                         <Input
                             id="gemini"
                             type="password"
                             value={apiKeys.gemini}
                             onChange={(e) => setApiKeys({...apiKeys, gemini: e.target.value})}
                             placeholder="AI..."
+                            className="bg-muted border-none"
                         />
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button onClick={saveApiKeys}>Save</Button>
+                    <Button onClick={saveApiKeys}>Save Configuration</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
       </div>
 
-      <ScrollArea className="flex-1 p-4">
+      {/* Messages */}
+      <ScrollArea className="flex-1 p-4 bg-zinc-950/30">
         <div className="space-y-4">
             {messages.map((msg, i) => (
                 <div key={i} className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
-                    <Avatar className="h-8 w-8">
-                        <AvatarFallback className={msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}>
-                            {msg.role === "user" ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+                    <Avatar className="h-7 w-7 border border-zinc-700">
+                        <AvatarFallback className={`text-[10px] ${msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-zinc-800 text-zinc-400"}`}>
+                            {msg.role === "user" ? <User className="h-3 w-3" /> : <Bot className="h-3 w-3" />}
                         </AvatarFallback>
                     </Avatar>
-                    <div className={`rounded-lg p-3 text-sm max-w-[80%] whitespace-pre-wrap ${
+                    <div className={`rounded-xl p-3 text-xs max-w-[85%] whitespace-pre-wrap leading-relaxed shadow-sm ${
                         msg.role === "user"
                         ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-foreground"
+                        : "bg-zinc-800 text-zinc-200 border border-zinc-700/50"
                     }`}>
                         {msg.content}
                     </div>
@@ -168,9 +181,9 @@ export function Chat() {
             ))}
              {isLoading && (
                 <div className="flex gap-3">
-                     <Avatar className="h-8 w-8"><AvatarFallback><Bot className="h-4 w-4" /></AvatarFallback></Avatar>
-                     <div className="bg-muted rounded-lg p-3 flex items-center">
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                     <Avatar className="h-7 w-7 border border-zinc-700"><AvatarFallback className="bg-zinc-800"><Bot className="h-3 w-3 text-zinc-400" /></AvatarFallback></Avatar>
+                     <div className="bg-zinc-800/50 border border-zinc-800 rounded-xl p-3 flex items-center shadow-sm">
+                        <Loader2 className="h-3 w-3 animate-spin text-zinc-400" />
                      </div>
                 </div>
             )}
@@ -178,16 +191,23 @@ export function Chat() {
         </div>
       </ScrollArea>
 
-      <div className="p-4 border-t bg-background">
-        <div className="flex gap-2">
+      {/* Input */}
+      <div className="p-3 border-t border-zinc-800/50 bg-background/50 backdrop-blur-sm">
+        <div className="flex gap-2 relative">
             <Input
-                placeholder="Ask to edit video..."
+                placeholder="Ask Copilot to edit..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 disabled={isLoading}
+                className="bg-zinc-900 border-zinc-800 focus:border-primary/50 pl-3 pr-10 py-5 text-sm shadow-inner"
             />
-            <Button size="icon" onClick={handleSend} disabled={isLoading || !input.trim()}>
+            <Button
+                size="icon"
+                onClick={handleSend}
+                disabled={isLoading || !input.trim()}
+                className="absolute right-1 top-1 h-8 w-8 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
+            >
                 <Send className="h-4 w-4" />
             </Button>
         </div>
