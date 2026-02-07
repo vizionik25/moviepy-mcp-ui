@@ -40,7 +40,7 @@ sys.modules['numpy'] = MagicMock()
 sys.modules['numexpr'] = MagicMock()
 sys.modules['pydantic'] = MagicMock()
 
-from server import validate_path, validate_write_path, OUTPUT_DIR
+from server import validate_path, validate_write_path, OUTPUT_DIR, delete_clip, CLIPS, register_clip
 
 class TestValidatePath(unittest.TestCase):
     def setUp(self):
@@ -202,6 +202,47 @@ class TestValidateWritePath(unittest.TestCase):
         filename = "src/server.py"
         with self.assertRaises(ValueError):
             validate_write_path(filename)
+
+
+class TestClipManagement(unittest.TestCase):
+    def setUp(self):
+        # Clear CLIPS before each test
+        CLIPS.clear()
+
+    def test_delete_existing_clip(self):
+        """Test deleting an existing clip."""
+        mock_clip = MagicMock()
+        clip_id = "test_clip_1"
+        CLIPS[clip_id] = mock_clip
+
+        result = delete_clip(clip_id)
+
+        self.assertEqual(result, f"Clip {clip_id} deleted.")
+        self.assertNotIn(clip_id, CLIPS)
+        mock_clip.close.assert_called_once()
+
+    def test_delete_non_existent_clip(self):
+        """Test deleting a clip that does not exist."""
+        clip_id = "non_existent_clip"
+
+        result = delete_clip(clip_id)
+
+        self.assertEqual(result, f"Clip {clip_id} not found.")
+        self.assertNotIn(clip_id, CLIPS)
+
+    def test_delete_clip_error_on_close(self):
+        """Test deleting a clip where close() raises an exception."""
+        mock_clip = MagicMock()
+        mock_clip.close.side_effect = Exception("Close error")
+        clip_id = "error_clip"
+        CLIPS[clip_id] = mock_clip
+
+        result = delete_clip(clip_id)
+
+        # It should still be deleted and return success message
+        self.assertEqual(result, f"Clip {clip_id} deleted.")
+        self.assertNotIn(clip_id, CLIPS)
+        mock_clip.close.assert_called_once()
 
 if __name__ == '__main__':
     unittest.main()
