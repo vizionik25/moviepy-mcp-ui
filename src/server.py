@@ -18,8 +18,32 @@ mcp = FastMCP("moviepy-mcp")
 
 CLIPS = {}
 MAX_CLIPS = 100
+OUTPUT_DIR = Path.cwd() / "output"
+try:
+    OUTPUT_DIR.mkdir(exist_ok=True)
+except OSError:
+    pass
 
 # --- Clip Management ---
+def validate_write_path(filename: str) -> str:
+    """Strict path validation for writing files.
+
+    Files must be written to the 'output' directory or '/tmp'.
+    This prevents overwriting source code or critical system files.
+    """
+    try:
+        path = Path(filename).resolve()
+    except (RuntimeError, OSError) as e:
+        raise ValueError(f"Invalid path '{filename}': {e}")
+
+    tmp = Path("/tmp").resolve() if Path("/tmp").exists() else Path("/tmp")
+    output_dir = OUTPUT_DIR.resolve()
+
+    if not (path.is_relative_to(output_dir) or path.is_relative_to(tmp)):
+        raise ValueError(f"Write access to path '{filename}' is denied. Files must be written to 'output/' or '/tmp/'.")
+
+    return str(path)
+
 
 def validate_path(filename: str) -> str:
     """Basic path validation to prevent traversal outside the project directory or temp."""
@@ -197,7 +221,7 @@ def write_videofile(
     ffmpeg_params: list[str] = None
 ) -> str:
     """Write a video clip to a file."""
-    filename = validate_path(filename)
+    filename = validate_write_path(filename)
     clip = get_clip(clip_id)
     clip.write_videofile(
         filename=filename,
@@ -245,7 +269,7 @@ def write_audiofile(
     bitrate: str = None
 ) -> str:
     """Write an audio clip to a file."""
-    filename = validate_path(filename)
+    filename = validate_write_path(filename)
     clip = get_clip(clip_id)
     clip.write_audiofile(
         filename=filename,
@@ -795,7 +819,7 @@ def write_gif(
     loop: int = 0
 ) -> str:
     """Write a video clip to a GIF file."""
-    filename = validate_path(filename)
+    filename = validate_write_path(filename)
     clip = get_clip(clip_id)
     clip.write_gif(
         filename,
