@@ -40,7 +40,7 @@ sys.modules['numpy'] = MagicMock()
 sys.modules['numexpr'] = MagicMock()
 sys.modules['pydantic'] = MagicMock()
 
-from server import validate_path
+from server import validate_path, validate_write_path, OUTPUT_DIR
 
 class TestValidatePath(unittest.TestCase):
     def setUp(self):
@@ -161,6 +161,47 @@ class TestValidatePath(unittest.TestCase):
         """Test path with null byte."""
         with self.assertRaises(ValueError):
             validate_path("test\0file.txt")
+
+
+class TestValidateWritePath(unittest.TestCase):
+    def setUp(self):
+        self.output_dir = OUTPUT_DIR.resolve()
+        self.tmp = Path("/tmp").resolve() if Path("/tmp").exists() else Path("/tmp")
+        # Ensure output dir exists (it should, but just in case)
+        self.output_dir.mkdir(exist_ok=True)
+
+    def test_write_to_output_dir(self):
+        """Test writing to the allowed output directory."""
+        filename = str(self.output_dir / "test.mp4")
+        result = validate_write_path(filename)
+        self.assertEqual(result, filename)
+
+    def test_write_to_output_dir_relative(self):
+        """Test writing to the allowed output directory using relative path."""
+        # Assuming CWD is project root
+        filename = "output/test.mp4"
+        result = validate_write_path(filename)
+        self.assertEqual(result, str(self.output_dir / "test.mp4"))
+
+    def test_write_to_tmp(self):
+        """Test writing to /tmp."""
+        if not os.path.exists("/tmp"):
+            self.skipTest("/tmp does not exist")
+        filename = "/tmp/test.mp4"
+        result = validate_write_path(filename)
+        self.assertEqual(result, str(self.tmp / "test.mp4"))
+
+    def test_write_to_cwd_blocked(self):
+        """Test writing to CWD (blocked)."""
+        filename = "test.mp4" # implied in CWD
+        with self.assertRaises(ValueError):
+            validate_write_path(filename)
+
+    def test_write_to_src_blocked(self):
+        """Test writing to src/ directory (blocked)."""
+        filename = "src/server.py"
+        with self.assertRaises(ValueError):
+            validate_write_path(filename)
 
 if __name__ == '__main__':
     unittest.main()
