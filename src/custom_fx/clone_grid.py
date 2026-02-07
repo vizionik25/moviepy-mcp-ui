@@ -34,7 +34,7 @@ class CloneGrid(Effect):
             return rows, cols
 
     def apply(self, clip):
-        def filter(get_frame, t):
+        def process_frame(get_frame, t):
             frame = get_frame(t)
             h, w = frame.shape[:2]
             
@@ -61,4 +61,4 @@ class CloneGrid(Effect):
                 
             return grid
 
-        return clip.transform(filter)
+        return clip.transform(process_frame)

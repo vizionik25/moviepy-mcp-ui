@@ -28,7 +28,7 @@ class AutoFraming(Effect):
         self.current_y = None
 
     def apply(self, clip):
-        def filter(get_frame, t):
+        def process_frame(get_frame, t):
             frame = get_frame(t)
             h, w = frame.shape[:2]
             
@@ -90,4 +90,4 @@ class AutoFraming(Effect):
             # Crop the frame
             return frame[y1:y2, x1:x2]
 
-        return clip.transform(filter)
+        return clip.transform(process_frame)
