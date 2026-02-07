@@ -22,7 +22,9 @@ fastmcp_mock.FastMCP.return_value = mock_mcp_instance
 
 # Apply mocks to sys.modules
 sys.modules['fastmcp'] = fastmcp_mock
-sys.modules['moviepy'] = MagicMock()
+mock_moviepy = MagicMock()
+mock_moviepy.__all__ = ['ImageClip', 'VideoFileClip']
+sys.modules['moviepy'] = mock_moviepy
 sys.modules['moviepy.video'] = MagicMock()
 sys.modules['moviepy.video.tools'] = MagicMock()
 sys.modules['moviepy.video.tools.drawing'] = MagicMock()

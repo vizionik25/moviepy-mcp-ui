@@ -29,7 +29,6 @@ from server import video_file_clip, validate_path
 
 class TestVideoIO(unittest.TestCase):
     def test_video_file_clip_not_found(self):
-        """Test that video_file_clip raises FileNotFoundError when file does not exist."""
         # Use a path that definitely doesn't exist
         non_existent_file = "non_existent_video_12345.mp4"
         if os.path.exists(non_existent_file):
@@ -39,15 +38,8 @@ class TestVideoIO(unittest.TestCase):
         print(f"DEBUG: validated path: {validated}")
         print(f"DEBUG: exists? {os.path.exists(validated)}")
 
-        try:
+        with self.assertRaises(FileNotFoundError):
             video_file_clip(non_existent_file)
-            print("DEBUG: video_file_clip did NOT raise exception")
-        except FileNotFoundError:
-            print("DEBUG: Caught FileNotFoundError")
-            raise
-        except Exception as e:
-            print(f"DEBUG: Caught unexpected exception: {type(e)}: {e}")
-            raise
 
 if __name__ == '__main__':
     unittest.main()

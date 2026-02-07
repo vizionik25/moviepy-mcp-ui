@@ -14,12 +14,16 @@ import numexpr
 from custom_fx import *
 from typing import Any
 from mcp_ui.core import create_ui_resource, UIMetadataKey
+try:
+    from .config import MAX_CLIPS, OUTPUT_DIR
+except ImportError:
+    from config import MAX_CLIPS, OUTPUT_DIR
 
 mcp = FastMCP("moviepy-mcp")
 
 CLIPS = {}
-MAX_CLIPS = 100
-OUTPUT_DIR = Path.cwd() / "output"
+
+
 try:
     OUTPUT_DIR.mkdir(exist_ok=True)
 except OSError:
