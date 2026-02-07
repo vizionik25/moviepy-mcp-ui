@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import litellm
+import logging
 import os
 import json
 import ast
@@ -11,6 +12,10 @@ from typing import List, Dict, Any, Optional
 # To ensure server.py is importable
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 from server import mcp
 
 app = FastAPI()
@@ -135,5 +140,5 @@ async def get_clips():
             })
         return clips
     except Exception as e:
-        print(e)
+        logger.error("Failed to list clips", exc_info=True)
         return []
