@@ -55,7 +55,8 @@ class TestSecurityFix(unittest.TestCase):
 
         dangerous_params = ["-f", "image2", "/tmp/hacked.jpg"]
 
-        with patch('server.validate_path', return_value='/tmp/output.mp4'):
+        # Patch validate_write_path instead of validate_path
+        with patch('server.validate_write_path', return_value='/tmp/output.mp4'):
             with self.assertRaises(TypeError) as cm:
                 write_videofile(
                     clip_id=clip_id,
@@ -74,7 +75,8 @@ class TestSecurityFix(unittest.TestCase):
         clip_id = "test_clip_id"
         CLIPS[clip_id] = mock_clip
 
-        with patch('server.validate_path', return_value='/tmp/output.mp4'):
+        # Patch validate_write_path instead of validate_path
+        with patch('server.validate_write_path', return_value='/tmp/output.mp4'):
             result = write_videofile(
                 clip_id=clip_id,
                 filename="output.mp4",
