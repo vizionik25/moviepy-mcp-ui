@@ -4,7 +4,7 @@ import os
 from unittest.mock import MagicMock, patch
 
 # Add src to sys.path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Configure FastMCP mock to act as a transparent decorator
 fastmcp_mock = MagicMock()
@@ -33,12 +33,14 @@ sys.modules['moviepy.video.tools.subtitles'] = MagicMock()
 sys.modules['moviepy.video.tools.credits'] = MagicMock()
 sys.modules['mcp_ui'] = MagicMock()
 sys.modules['mcp_ui.core'] = MagicMock()
-sys.modules['custom_fx'] = MagicMock()
+
 sys.modules['numpy'] = MagicMock()
+sys.modules['cv2'] = MagicMock()
+sys.modules['PIL'] = MagicMock()
 sys.modules['numexpr'] = MagicMock()
 sys.modules['pydantic'] = MagicMock()
 
-from server import write_videofile, CLIPS
+from src.server import write_videofile, CLIPS
 
 class TestSecurityFix(unittest.TestCase):
     def setUp(self):
@@ -55,7 +57,7 @@ class TestSecurityFix(unittest.TestCase):
 
         dangerous_params = ["-f", "image2", "/tmp/hacked.jpg"]
 
-        with patch('server.validate_write_path', return_value='/tmp/output.mp4'):
+        with patch('src.server.validate_write_path', return_value='/tmp/output.mp4'):
             with self.assertRaises(TypeError) as cm:
                 write_videofile(
                     clip_id=clip_id,
@@ -74,7 +76,7 @@ class TestSecurityFix(unittest.TestCase):
         clip_id = "test_clip_id"
         CLIPS[clip_id] = mock_clip
 
-        with patch('server.validate_write_path', return_value='/tmp/output.mp4'):
+        with patch('src.server.validate_write_path', return_value='/tmp/output.mp4'):
             result = write_videofile(
                 clip_id=clip_id,
                 filename="output.mp4",

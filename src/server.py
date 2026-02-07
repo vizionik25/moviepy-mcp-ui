@@ -11,7 +11,7 @@ import ast
 import uuid
 import numpy as np
 import numexpr
-from custom_fx import *
+from .custom_fx import *
 from typing import Any
 from mcp_ui.core import create_ui_resource, UIMetadataKey
 

@@ -1,5 +1,5 @@
 import asyncio
-from server import mcp
+from src.server import mcp
 import sys
 
 async def main():

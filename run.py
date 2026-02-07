@@ -7,9 +7,7 @@ import sys
 def main():
     root_dir = os.getcwd()
 
-    # Ensure src is in python path
     env = os.environ.copy()
-    env["PYTHONPATH"] = os.path.join(root_dir, "src")
 
     # Start Backend
     print("Starting Backend on http://localhost:8000 ...")

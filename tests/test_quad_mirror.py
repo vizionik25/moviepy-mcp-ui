@@ -17,9 +17,9 @@ mock_moviepy.Effect = MockEffect
 sys.modules["moviepy"] = mock_moviepy
 
 # Add src to sys.path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from custom_fx.quad_mirror import QuadMirror
+from src.custom_fx.quad_mirror import QuadMirror
 
 class TestQuadMirror(unittest.TestCase):
     def setUp(self):

@@ -4,7 +4,7 @@ import sys
 from unittest.mock import MagicMock
 
 # Add src to sys.path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Mock modules
 sys.modules['fastmcp'] = MagicMock()
@@ -19,13 +19,15 @@ sys.modules['moviepy.video.tools.subtitles'] = MagicMock()
 sys.modules['moviepy.video.tools.credits'] = MagicMock()
 sys.modules['mcp_ui'] = MagicMock()
 sys.modules['mcp_ui.core'] = MagicMock()
-sys.modules['custom_fx'] = MagicMock()
+#  # Removed
 sys.modules['numpy'] = MagicMock()
+sys.modules['cv2'] = MagicMock()
+sys.modules['PIL'] = MagicMock()
 sys.modules['numexpr'] = MagicMock()
 sys.modules['pydantic'] = MagicMock()
 
 # Import server after mocking
-from server import video_file_clip, validate_path
+from src.server import video_file_clip, validate_path
 
 class TestVideoIO(unittest.TestCase):
     def test_video_file_clip_not_found(self):
@@ -39,15 +41,8 @@ class TestVideoIO(unittest.TestCase):
         print(f"DEBUG: validated path: {validated}")
         print(f"DEBUG: exists? {os.path.exists(validated)}")
 
-        try:
+        with self.assertRaises(FileNotFoundError):
             video_file_clip(non_existent_file)
-            print("DEBUG: video_file_clip did NOT raise exception")
-        except FileNotFoundError:
-            print("DEBUG: Caught FileNotFoundError")
-            raise
-        except Exception as e:
-            print(f"DEBUG: Caught unexpected exception: {type(e)}: {e}")
-            raise
 
 if __name__ == '__main__':
     unittest.main()

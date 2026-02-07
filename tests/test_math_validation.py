@@ -5,7 +5,7 @@ import ast
 from unittest.mock import MagicMock, patch
 
 # Add src to sys.path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # --- MOCKING DEPENDENCIES START ---
 fastmcp_mock = MagicMock()
@@ -31,14 +31,16 @@ sys.modules['moviepy.video.tools.subtitles'] = MagicMock()
 sys.modules['moviepy.video.tools.credits'] = MagicMock()
 sys.modules['mcp_ui'] = MagicMock()
 sys.modules['mcp_ui.core'] = MagicMock()
-sys.modules['custom_fx'] = MagicMock()
+
 sys.modules['numpy'] = MagicMock()
+sys.modules['cv2'] = MagicMock()
+sys.modules['PIL'] = MagicMock()
 sys.modules['numexpr'] = MagicMock()
 sys.modules['pydantic'] = MagicMock()
 
 # Import server
-import server
-from server import validate_math_expression, vfx_head_blur, CLIPS, register_clip
+import src.server as server
+from src.server import validate_math_expression, vfx_head_blur, CLIPS, register_clip
 
 # Patch 'vfx' in server module since 'from moviepy import *' didn't provide it in the mock env
 server.vfx = MagicMock()
@@ -192,13 +194,13 @@ class TestVfxHeadBlur(unittest.TestCase):
         self.clip_id = "test_clip_id"
         self.mock_clip = MagicMock()
 
-        self.get_clip_patcher = patch('server.get_clip', return_value=self.mock_clip)
-        self.register_clip_patcher = patch('server.register_clip', return_value="new_clip_id")
+        self.get_clip_patcher = patch('src.server.get_clip', return_value=self.mock_clip)
+        self.register_clip_patcher = patch('src.server.register_clip', return_value="new_clip_id")
 
         self.mock_get_clip = self.get_clip_patcher.start()
         self.mock_register_clip = self.register_clip_patcher.start()
 
-        self.numexpr_patcher = patch('server.numexpr')
+        self.numexpr_patcher = patch('src.server.numexpr')
         self.mock_numexpr = self.numexpr_patcher.start()
 
     def tearDown(self):

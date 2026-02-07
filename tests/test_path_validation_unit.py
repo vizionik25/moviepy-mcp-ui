@@ -28,17 +28,19 @@ sys.modules['moviepy.video.tools.subtitles'] = MagicMock()
 sys.modules['moviepy.video.tools.credits'] = MagicMock()
 sys.modules['mcp_ui'] = MagicMock()
 sys.modules['mcp_ui.core'] = MagicMock()
-sys.modules['custom_fx'] = MagicMock()
+
 sys.modules['numpy'] = MagicMock()
+sys.modules['cv2'] = MagicMock()
+sys.modules['PIL'] = MagicMock()
 sys.modules['numexpr'] = MagicMock()
 sys.modules['pydantic'] = MagicMock()
 
 # --- 2. Import Target Functions ---
 # Add src to sys.path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 try:
-    from server import validate_path, validate_write_path
+    from src.server import validate_path, validate_write_path
 except ImportError as e:
     print(f"Failed to import server: {e}")
     sys.exit(1)
@@ -50,7 +52,7 @@ class TestPathValidationUnit(unittest.TestCase):
         self.mock_tmp = MagicMock()
         self.mock_output = MagicMock()
 
-    @patch('server.Path')
+    @patch('src.server.Path')
     def test_validate_path_valid_cwd(self, MockPath):
         """Test validate_path with a file inside CWD."""
         # Arrange
@@ -93,7 +95,7 @@ class TestPathValidationUnit(unittest.TestCase):
         self.assertEqual(result, str(mock_resolved_file))
         mock_resolved_file.is_relative_to.assert_any_call(mock_resolved_cwd)
 
-    @patch('server.Path')
+    @patch('src.server.Path')
     def test_validate_path_valid_tmp(self, MockPath):
         """Test validate_path with a file inside /tmp."""
         # Arrange
@@ -131,7 +133,7 @@ class TestPathValidationUnit(unittest.TestCase):
         # Assert
         self.assertEqual(result, str(mock_resolved_file))
 
-    @patch('server.Path')
+    @patch('src.server.Path')
     def test_validate_path_traversal(self, MockPath):
         """Test validate_path with a path traversing outside allowed dirs."""
         # Arrange
@@ -164,7 +166,7 @@ class TestPathValidationUnit(unittest.TestCase):
             validate_path(filename)
         self.assertIn("Access to path", str(cm.exception))
 
-    @patch('server.Path')
+    @patch('src.server.Path')
     def test_validate_path_resolve_error(self, MockPath):
         """Test validate_path when resolve() raises OSError."""
         # Arrange
@@ -180,8 +182,8 @@ class TestPathValidationUnit(unittest.TestCase):
             validate_path(filename)
         self.assertIn("Invalid path", str(cm.exception))
 
-    @patch('server.OUTPUT_DIR')
-    @patch('server.Path')
+    @patch('src.server.OUTPUT_DIR')
+    @patch('src.server.Path')
     def test_validate_write_path_valid_output(self, MockPath, MockOutputDir):
         """Test validate_write_path with a file inside output directory."""
         # Arrange
@@ -216,8 +218,8 @@ class TestPathValidationUnit(unittest.TestCase):
         # Assert
         self.assertEqual(result, str(mock_resolved_file))
 
-    @patch('server.OUTPUT_DIR')
-    @patch('server.Path')
+    @patch('src.server.OUTPUT_DIR')
+    @patch('src.server.Path')
     def test_validate_write_path_invalid_location(self, MockPath, MockOutputDir):
         """Test validate_write_path attempting to write to CWD (not output/)."""
         # Arrange

@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 from pathlib import Path
 
 # Add src to sys.path to allow importing server
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Configure FastMCP mock to act as a transparent decorator
 fastmcp_mock = MagicMock()
@@ -35,12 +35,14 @@ sys.modules['moviepy.video.tools.subtitles'] = MagicMock()
 sys.modules['moviepy.video.tools.credits'] = MagicMock()
 sys.modules['mcp_ui'] = MagicMock()
 sys.modules['mcp_ui.core'] = MagicMock()
-sys.modules['custom_fx'] = MagicMock()
+
 sys.modules['numpy'] = MagicMock()
+sys.modules['cv2'] = MagicMock()
+sys.modules['PIL'] = MagicMock()
 sys.modules['numexpr'] = MagicMock()
 sys.modules['pydantic'] = MagicMock()
 
-from server import validate_path, validate_write_path, OUTPUT_DIR, delete_clip, CLIPS, register_clip
+from src.server import validate_path, validate_write_path, OUTPUT_DIR, delete_clip, CLIPS, register_clip
 
 class TestValidatePath(unittest.TestCase):
     def setUp(self):

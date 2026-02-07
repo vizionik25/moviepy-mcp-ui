@@ -4,7 +4,7 @@ import sys
 from unittest.mock import MagicMock, patch
 
 # Add src to sys.path to allow importing server
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Configure FastMCP mock to act as a transparent decorator
 fastmcp_mock = MagicMock()
@@ -33,13 +33,15 @@ sys.modules['moviepy.video.tools.subtitles'] = MagicMock()
 sys.modules['moviepy.video.tools.credits'] = MagicMock()
 sys.modules['mcp_ui'] = MagicMock()
 sys.modules['mcp_ui.core'] = MagicMock()
-sys.modules['custom_fx'] = MagicMock()
+
 sys.modules['numpy'] = MagicMock()
+sys.modules['cv2'] = MagicMock()
+sys.modules['PIL'] = MagicMock()
 sys.modules['numexpr'] = MagicMock()
 sys.modules['pydantic'] = MagicMock()
 
 # Import server after mocking
-import server
+import src.server as server
 
 class TestClipLimit(unittest.TestCase):
     def setUp(self):

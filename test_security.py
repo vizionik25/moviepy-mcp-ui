@@ -2,10 +2,9 @@ import sys
 import os
 
 # Add src to path
-sys.path.append(os.path.abspath("src"))
 
 try:
-    from server import validate_math_expression
+    from src.server import validate_math_expression
 except ImportError as e:
     print(f"Could not import server.py directly: {e}")
     sys.exit(1)
