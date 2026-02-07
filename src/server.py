@@ -1,3 +1,4 @@
+from pathlib import Path
 from fastmcp import FastMCP, Client
 from moviepy import *
 from moviepy.video.tools.drawing import color_gradient, color_split
@@ -20,16 +21,16 @@ MAX_CLIPS = 100
 
 # --- Clip Management ---
 
-def validate_path(filename: str):
+def validate_path(filename: str) -> str:
     """Basic path validation to prevent traversal outside the project directory or temp."""
-    abs_path = os.path.abspath(filename)
-    cwd = os.getcwd()
-    tmp = "/tmp" # Generic tmp for linux
-    if not (abs_path.startswith(cwd) or abs_path.startswith(tmp)):
-         # In a real production system, this would be stricter.
-         # For this MCP, we'll allow paths within the CWD.
-         pass
-    return filename
+    path = Path(filename).resolve()
+    cwd = Path.cwd().resolve()
+    tmp = Path("/tmp").resolve() if Path("/tmp").exists() else Path("/tmp")
+
+    if not (path.is_relative_to(cwd) or path.is_relative_to(tmp)):
+        raise ValueError(f"Access to path '{filename}' is denied. Path must be within the project directory or /tmp.")
+
+    return str(path)
 
 def register_clip(clip):
     """Registers a clip in the global state and returns its ID."""
