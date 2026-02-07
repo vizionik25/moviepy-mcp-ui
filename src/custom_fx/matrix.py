@@ -78,7 +78,7 @@ class Matrix(Effect):
         # Static grid for character randomization
         base_char_grid = np.random.randint(0, len(self.chars), (rows, cols))
 
-        def filter(get_frame, t):
+        def process_frame(get_frame, t):
             frame = get_frame(t)
             
             # 1. Calculate the Brightness Grid (Vectorized)
@@ -136,4 +136,4 @@ class Matrix(Effect):
             
             return out
 
-        return clip.transform(filter)
+        return clip.transform(process_frame)

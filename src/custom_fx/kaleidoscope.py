@@ -17,7 +17,7 @@ class Kaleidoscope(Effect):
         self.y = y
 
     def apply(self, clip):
-        def filter(get_frame, t):
+        def process_frame(get_frame, t):
             frame = get_frame(t)
             h, w = frame.shape[:2]
             
@@ -63,4 +63,4 @@ class Kaleidoscope(Effect):
             # Sample input frame at calculated source indices
             return frame[iy, ix]
 
-        return clip.transform(filter)
+        return clip.transform(process_frame)

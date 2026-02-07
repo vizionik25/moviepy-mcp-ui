@@ -28,7 +28,7 @@ class RGBSync(Effect):
         self.time_offsets = [r_time_offset, g_time_offset, b_time_offset]
 
     def apply(self, clip):
-        def filter(get_frame, t):
+        def process_frame(get_frame, t):
             # Get frames for each channel based on time offsets
             # We use float32 for processing and then clip back to uint8
             channels = []
@@ -49,7 +49,7 @@ class RGBSync(Effect):
             
             return np.stack(channels, axis=-1)
 
-        return clip.transform(filter)
+        return clip.transform(process_frame)
 
 # Usage Example:
 # effect = RGBSync(r_offset=(5, 0), b_offset=(-5, 0), g_time_offset=0.05)

@@ -21,7 +21,7 @@ class ChromaKey(Effect):
         self.softness = softness
 
     def apply(self, clip):
-        def filter(image):
+        def process_frame(image):
             # Calculate Euclidean distance to target color
             # Use float32 to avoid overflow during squaring
             dist = np.sqrt(np.sum((image.astype('float32') - self.color)**2, axis=-1))
@@ -44,7 +44,7 @@ class ChromaKey(Effect):
             return mask
 
         # In MoviePy, we apply the mask to the clip
-        mask_clip = clip.image_transform(filter)
+        mask_clip = clip.image_transform(process_frame)
         return clip.with_mask(mask_clip)
 
 # Usage Example:

@@ -43,7 +43,7 @@ class RotatingCube(Effect):
         return frame[idx_y][:, idx_x]
 
     def apply(self, clip):
-        def filter(get_frame, t):
+        def process_frame(get_frame, t):
             raw_frame = get_frame(t)
             frame = self._apply_quad_mirror(raw_frame) if self.mirror else raw_frame
             h, w = frame.shape[:2]
@@ -123,4 +123,4 @@ class RotatingCube(Effect):
             
             return canvas
 
-        return clip.transform(filter)
+        return clip.transform(process_frame)
