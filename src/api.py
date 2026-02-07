@@ -81,7 +81,7 @@ async def chat(request: ChatRequest):
             function_name = tool_call.function.name
             try:
                 function_args = json.loads(tool_call.function.arguments)
-            except:
+            except json.JSONDecodeError:
                 function_args = {}
 
             content = ""
