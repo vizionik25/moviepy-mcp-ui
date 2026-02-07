@@ -18,7 +18,18 @@ export function LibraryPanel({ className }: LibraryPanelProps) {
   const fetchClips = async () => {
     setLoading(true)
     try {
-        const res = await fetch("http://localhost:8000/api/clips")
+        let secret = "stitch-secret"
+        if (typeof window !== "undefined") {
+             const stored = localStorage.getItem("mcp_api_keys")
+             if (stored) {
+                 const parsed = JSON.parse(stored)
+                 if (parsed.serverSecret) secret = parsed.serverSecret
+             }
+        }
+
+        const res = await fetch("http://localhost:8000/api/clips", {
+             headers: { "X-Stitch-Secret": secret }
+        })
         if (res.ok) {
             const data = await res.json()
             setClips(data)

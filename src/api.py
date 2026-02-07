@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import litellm
@@ -23,6 +23,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Authentication
+STITCH_SECRET = os.environ.get("STITCH_SECRET", "stitch-secret")
+
+async def verify_secret(x_stitch_secret: Optional[str] = Header(None, alias="X-Stitch-Secret")):
+    if x_stitch_secret != STITCH_SECRET:
+         raise HTTPException(status_code=401, detail="Invalid or missing X-Stitch-Secret header")
+
 class ChatRequest(BaseModel):
     messages: List[Dict[str, Any]]
     api_keys: Dict[str, str]
@@ -40,21 +47,23 @@ def get_openai_tools():
         })
     return tools
 
-@app.post("/api/chat")
+@app.post("/api/chat", dependencies=[Depends(verify_secret)])
 async def chat(request: ChatRequest):
     model = None
-    if request.api_keys.get("openai"):
-        os.environ["OPENAI_API_KEY"] = request.api_keys["openai"]
-        model = "gpt-4o"
-    if request.api_keys.get("anthropic"):
-        os.environ["ANTHROPIC_API_KEY"] = request.api_keys["anthropic"]
-        if not model: model = "claude-3-5-sonnet-20240620"
-    if request.api_keys.get("gemini"):
-        os.environ["GEMINI_API_KEY"] = request.api_keys["gemini"]
-        os.environ["GOOGLE_API_KEY"] = request.api_keys["gemini"]
-        if not model: model = "gemini/gemini-1.5-pro"
+    api_key = None
 
-    if not model:
+    # Determine model and key based on priority (OpenAI > Anthropic > Gemini)
+    if request.api_keys.get("openai"):
+        api_key = request.api_keys["openai"]
+        model = "gpt-4o"
+    elif request.api_keys.get("anthropic"):
+        api_key = request.api_keys["anthropic"]
+        model = "claude-3-5-sonnet-20240620"
+    elif request.api_keys.get("gemini"):
+        api_key = request.api_keys["gemini"]
+        model = "gemini/gemini-1.5-pro"
+
+    if not model or not api_key:
         raise HTTPException(status_code=400, detail="No valid API key provided")
 
     tools = get_openai_tools()
@@ -65,7 +74,8 @@ async def chat(request: ChatRequest):
             model=model,
             messages=messages,
             tools=tools,
-            tool_choice="auto"
+            tool_choice="auto",
+            api_key=api_key
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -106,7 +116,8 @@ async def chat(request: ChatRequest):
             response = await litellm.acompletion(
                 model=model,
                 messages=messages,
-                tools=tools
+                tools=tools,
+                api_key=api_key
             )
             return response.choices[0].message
         except Exception as e:
@@ -114,7 +125,7 @@ async def chat(request: ChatRequest):
 
     return response_message
 
-@app.get("/api/clips")
+@app.get("/api/clips", dependencies=[Depends(verify_secret)])
 async def get_clips():
     try:
         result = await mcp._tool_manager.call_tool("list_clips", {})

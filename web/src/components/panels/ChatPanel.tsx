@@ -35,13 +35,20 @@ export function ChatPanel({ className }: ChatPanelProps) {
     openai: "",
     anthropic: "",
     gemini: "",
+    serverSecret: "",
   })
 
   React.useEffect(() => {
     if (typeof window !== "undefined") {
         const stored = localStorage.getItem("mcp_api_keys")
         if (stored) {
-            setApiKeys(JSON.parse(stored))
+            const parsed = JSON.parse(stored)
+            setApiKeys({
+                openai: parsed.openai || "",
+                anthropic: parsed.anthropic || "",
+                gemini: parsed.gemini || "",
+                serverSecret: parsed.serverSecret || ""
+            })
         }
     }
   }, [])
@@ -70,7 +77,10 @@ export function ChatPanel({ className }: ChatPanelProps) {
     try {
         const res = await fetch("http://localhost:8000/api/chat", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "X-Stitch-Secret": apiKeys.serverSecret || "stitch-secret"
+            },
             body: JSON.stringify({
                 messages: newMessages,
                 api_keys: apiKeys
@@ -119,6 +129,17 @@ export function ChatPanel({ className }: ChatPanelProps) {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                         <label htmlFor="serverSecret" className="text-xs font-medium text-muted-foreground">Server Secret (Stitch)</label>
+                        <Input
+                            id="serverSecret"
+                            type="password"
+                            value={apiKeys.serverSecret}
+                            onChange={(e) => setApiKeys({...apiKeys, serverSecret: e.target.value})}
+                            placeholder="stitch-secret"
+                            className="bg-muted border-none"
+                        />
+                    </div>
                     <div className="grid gap-2">
                         <label htmlFor="openai" className="text-xs font-medium text-muted-foreground">OpenAI API Key</label>
                         <Input
