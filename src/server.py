@@ -194,7 +194,6 @@ def write_videofile(
     bitrate: str = None,
     preset: str = "medium",
     threads: int = None,
-    ffmpeg_params: list[str] = None
 ) -> str:
     """Write a video clip to a file."""
     filename = validate_path(filename)
@@ -207,7 +206,6 @@ def write_videofile(
         bitrate=bitrate,
         preset=preset,
         threads=threads,
-        ffmpeg_params=ffmpeg_params
     )
     return f"Successfully wrote video to {filename}"
 

@@ -1,6 +1,5 @@
 import unittest
 import os
-import shutil
 import tempfile
 import sys
 from unittest.mock import MagicMock
@@ -9,8 +8,22 @@ from pathlib import Path
 # Add src to sys.path to allow importing server
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
-# Mock external dependencies
-sys.modules['fastmcp'] = MagicMock()
+# Configure FastMCP mock to act as a transparent decorator
+fastmcp_mock = MagicMock()
+mock_mcp_instance = MagicMock()
+
+# Define a side effect for @mcp.tool and @mcp.prompt to return the original function
+def identity_decorator(func):
+    return func
+
+mock_mcp_instance.tool.side_effect = identity_decorator
+mock_mcp_instance.prompt.side_effect = identity_decorator
+
+# Make FastMCP() return our configured instance
+fastmcp_mock.FastMCP.return_value = mock_mcp_instance
+
+# Apply mocks to sys.modules
+sys.modules['fastmcp'] = fastmcp_mock
 sys.modules['moviepy'] = MagicMock()
 sys.modules['moviepy.video'] = MagicMock()
 sys.modules['moviepy.video.tools'] = MagicMock()
