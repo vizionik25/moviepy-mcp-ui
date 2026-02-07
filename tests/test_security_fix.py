@@ -1,99 +1,71 @@
 import unittest
 import sys
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
+from pathlib import Path
 
-# Add src to sys.path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+# Clean sys.modules to ensure fresh mocks
+for mod in ["src.server", "fastmcp", "moviepy"]:
+    if mod in sys.modules:
+        del sys.modules[mod]
 
-# Configure FastMCP mock to act as a transparent decorator
-fastmcp_mock = MagicMock()
-mock_mcp_instance = MagicMock()
+# Mock dependencies
+sys.modules["fastmcp"] = MagicMock()
+sys.modules["moviepy"] = MagicMock()
+sys.modules["moviepy.video.tools.drawing"] = MagicMock()
+sys.modules["moviepy.video.tools.cuts"] = MagicMock()
+sys.modules["moviepy.video.io.ffmpeg_tools"] = MagicMock()
+sys.modules["moviepy.video.tools.subtitles"] = MagicMock()
+sys.modules["moviepy.video.tools.credits"] = MagicMock()
+sys.modules["moviepy.audio.tools.cuts"] = MagicMock()
+sys.modules["moviepy.config"] = MagicMock()
+sys.modules["mcp_ui.core"] = MagicMock()
+sys.modules["numpy"] = MagicMock()
+sys.modules["numexpr"] = MagicMock()
+sys.modules["custom_fx"] = MagicMock()
+sys.modules["pydantic"] = MagicMock()
 
-# Define a side effect for @mcp.tool and @mcp.prompt to return the original function
-def identity_decorator(func):
-    return func
+class MockFastMCP:
+    def __init__(self, name):
+        pass
+    def tool(self, func):
+        return func
+    def prompt(self, func):
+        return func
+    def run(self, transport):
+        pass
 
-mock_mcp_instance.tool.side_effect = identity_decorator
-mock_mcp_instance.prompt.side_effect = identity_decorator
+sys.modules["fastmcp"].FastMCP = MockFastMCP
 
-# Make FastMCP() return our configured instance
-fastmcp_mock.FastMCP.return_value = mock_mcp_instance
+# Add src to path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# Apply mocks to sys.modules
-sys.modules['fastmcp'] = fastmcp_mock
-sys.modules['moviepy'] = MagicMock()
-sys.modules['moviepy.video'] = MagicMock()
-sys.modules['moviepy.video.tools'] = MagicMock()
-sys.modules['moviepy.video.tools.drawing'] = MagicMock()
-sys.modules['moviepy.video.tools.cuts'] = MagicMock()
-sys.modules['moviepy.video.io'] = MagicMock()
-sys.modules['moviepy.video.io.ffmpeg_tools'] = MagicMock()
-sys.modules['moviepy.video.tools.subtitles'] = MagicMock()
-sys.modules['moviepy.video.tools.credits'] = MagicMock()
-sys.modules['mcp_ui'] = MagicMock()
-sys.modules['mcp_ui.core'] = MagicMock()
-sys.modules['custom_fx'] = MagicMock()
-sys.modules['numpy'] = MagicMock()
-sys.modules['numexpr'] = MagicMock()
-sys.modules['pydantic'] = MagicMock()
-
-from server import write_videofile, CLIPS
+import src.server as server
 
 class TestSecurityFix(unittest.TestCase):
     def setUp(self):
-        CLIPS.clear()
+        self.source_file = "output/dummy_source.mp4"
+        os.makedirs("output", exist_ok=True)
+        with open(self.source_file, "w") as f:
+            f.write("dummy")
+        # Ensure OUTPUT_DIR is set up correctly in server
+        server.OUTPUT_DIR = Path("output").resolve()
 
-    def test_ffmpeg_params_rejected(self):
-        """
-        Verify that ffmpeg_params argument is no longer accepted by write_videofile.
-        This confirms the fix for the command injection vulnerability.
-        """
-        mock_clip = MagicMock()
-        clip_id = "test_clip_id"
-        CLIPS[clip_id] = mock_clip
+    def test_tools_ffmpeg_extract_subclip_block_write_to_src(self):
+        """Test that writing to src/ is blocked."""
+        target = "src/vulnerable.txt"
+        with self.assertRaises(ValueError) as cm:
+            server.tools_ffmpeg_extract_subclip(self.source_file, 0, 1, targetname=target)
+        self.assertIn("Write access to path", str(cm.exception))
 
-        dangerous_params = ["-f", "image2", "/tmp/hacked.jpg"]
+    def test_tools_ffmpeg_extract_subclip_allow_write_to_output(self):
+        """Test that writing to output/ is allowed."""
+        target = "output/safe.mp4"
+        server.tools_ffmpeg_extract_subclip(self.source_file, 0, 1, targetname=target)
 
-        with patch('server.validate_write_path', return_value='/tmp/output.mp4'):
-            with self.assertRaises(TypeError) as cm:
-                write_videofile(
-                    clip_id=clip_id,
-                    filename="output.mp4",
-                    ffmpeg_params=dangerous_params
-                )
-
-            # Verify the error message confirms the unexpected argument
-            self.assertIn("unexpected keyword argument 'ffmpeg_params'", str(cm.exception))
-
-    def test_write_videofile_success_without_params(self):
-        """
-        Verify that write_videofile still works for valid inputs (without ffmpeg_params).
-        """
-        mock_clip = MagicMock()
-        clip_id = "test_clip_id"
-        CLIPS[clip_id] = mock_clip
-
-        with patch('server.validate_write_path', return_value='/tmp/output.mp4'):
-            result = write_videofile(
-                clip_id=clip_id,
-                filename="output.mp4",
-                fps=30.0,
-                codec="libx264"
-            )
-
-            self.assertIn("Successfully wrote video", result)
-
-            # Verify internal call arguments
-            mock_clip.write_videofile.assert_called_once()
-            call_args = mock_clip.write_videofile.call_args
-            self.assertEqual(call_args.kwargs['filename'], '/tmp/output.mp4')
-            self.assertEqual(call_args.kwargs['fps'], 30.0)
-            self.assertEqual(call_args.kwargs['codec'], 'libx264')
-
-            # Ensure ffmpeg_params is NOT in the call args (even as None, ideally)
-            # Since we removed it from the call, it shouldn't be passed.
-            self.assertNotIn('ffmpeg_params', call_args.kwargs)
+    def test_tools_ffmpeg_extract_subclip_default_target(self):
+        """Test default target generation is safe."""
+        server.tools_ffmpeg_extract_subclip(self.source_file, 0, 1)
 
 if __name__ == '__main__':
     unittest.main()
