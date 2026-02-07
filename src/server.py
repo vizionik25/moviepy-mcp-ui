@@ -7,6 +7,7 @@ from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
 from moviepy.video.tools.subtitles import file_to_subtitles, SubtitlesClip
 from moviepy.video.tools.credits import CreditsClip
 import os
+import ast
 import uuid
 import numpy as np
 import numexpr
@@ -445,10 +446,62 @@ def vfx_gamma_correction(clip_id: str, gamma: float) -> str:
     clip = get_clip(clip_id)
     return register_clip(clip.with_effects([vfx.GammaCorrection(gamma)]))
 
+
+def validate_math_expression(code: str, allowed_vars: set[str] = None) -> None:
+    """
+    Validates that a math expression string contains only safe operations.
+    Raises ValueError if unsafe constructs are found.
+    """
+    if allowed_vars is None:
+        allowed_vars = {"t"}
+
+    # Whitelist of allowed AST node types
+    allowed_nodes = {
+        ast.Expression, ast.Load,
+        ast.BinOp, ast.UnaryOp, ast.Compare,
+        ast.Lt, ast.Gt, ast.LtE, ast.GtE, ast.Eq, ast.NotEq,
+        ast.Constant,
+        ast.Add, ast.Sub, ast.Mult, ast.Div, ast.FloorDiv, ast.Mod, ast.Pow,
+        ast.USub, ast.UAdd,
+        ast.Call, ast.Name,
+        ast.keyword
+    }
+
+    # Whitelist of allowed functions (numexpr supported functions)
+    allowed_funcs = {
+        'sin', 'cos', 'tan', 'arcsin', 'arccos', 'arctan', 'arctan2',
+        'sinh', 'cosh', 'tanh', 'arcsinh', 'arccosh', 'arctanh',
+        'log', 'log10', 'log1p', 'exp', 'expm1', 'sqrt', 'abs',
+        'conj', 'real', 'imag', 'complex', 'where', 'min', 'max'
+    }
+
+    # Allowed constants
+    allowed_vars = set(allowed_vars) | {'pi', 'e'}
+
+    try:
+        tree = ast.parse(code, mode='eval')
+    except SyntaxError as e:
+        raise ValueError(f"Invalid syntax: {e}")
+
+    for node in ast.walk(tree):
+        if type(node) not in allowed_nodes:
+            raise ValueError(f"Security check failed: Disallowed language construct '{type(node).__name__}'")
+
+        if isinstance(node, ast.Name):
+            if node.id not in allowed_vars and node.id not in allowed_funcs:
+                 raise ValueError(f"Security check failed: Disallowed variable or function '{node.id}'")
+
+        if isinstance(node, ast.Call):
+            if isinstance(node.func, ast.Name):
+                if node.func.id not in allowed_funcs:
+                     raise ValueError(f"Security check failed: Disallowed function call '{node.func.id}'")
+            else:
+                 raise ValueError("Security check failed: Indirect function calls are not allowed")
 @mcp.tool
 def vfx_head_blur(clip_id: str, fx_code: str, fy_code: str, radius: float, intensity: float = None) -> str:
     """Blur moving head (requires math expressions for fx/fy positions, e.g., '100 + 50*t')."""
     def safe_eval_func(code):
+        validate_math_expression(code)
         # Test once to see if it's a valid expression
         try:
             numexpr.evaluate(code, local_dict={"t": 0})
