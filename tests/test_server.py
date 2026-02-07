@@ -30,7 +30,11 @@ sys.modules['moviepy.video.tools'] = MagicMock()
 sys.modules['moviepy.video.tools.drawing'] = MagicMock()
 sys.modules['moviepy.video.tools.cuts'] = MagicMock()
 sys.modules['moviepy.video.io'] = MagicMock()
-sys.modules['moviepy.video.io.ffmpeg_tools'] = MagicMock()
+
+# We need to be able to access this specific mock for assertions
+mock_ffmpeg_tools = MagicMock()
+sys.modules['moviepy.video.io.ffmpeg_tools'] = mock_ffmpeg_tools
+
 sys.modules['moviepy.video.tools.subtitles'] = MagicMock()
 sys.modules['moviepy.video.tools.credits'] = MagicMock()
 sys.modules['mcp_ui'] = MagicMock()
@@ -40,7 +44,8 @@ sys.modules['numpy'] = MagicMock()
 sys.modules['numexpr'] = MagicMock()
 sys.modules['pydantic'] = MagicMock()
 
-from server import validate_path, validate_write_path, OUTPUT_DIR
+# Import from server AFTER mocking
+from server import validate_path, validate_write_path, OUTPUT_DIR, tools_ffmpeg_extract_subclip
 
 class TestValidatePath(unittest.TestCase):
     def setUp(self):
@@ -202,6 +207,51 @@ class TestValidateWritePath(unittest.TestCase):
         filename = "src/server.py"
         with self.assertRaises(ValueError):
             validate_write_path(filename)
+
+class TestToolsFfmpegExtractSubclip(unittest.TestCase):
+    def setUp(self):
+        self.cwd = Path.cwd().resolve()
+        # Create a dummy video file
+        self.test_file = "test_video.mp4"
+        with open(self.test_file, "w") as f:
+            f.write("dummy content")
+
+        # Reset mock
+        mock_ffmpeg_tools.ffmpeg_extract_subclip.reset_mock()
+
+    def tearDown(self):
+        if os.path.exists(self.test_file):
+            os.remove(self.test_file)
+
+    def test_subclip_time_validation(self):
+        """Test that start_time >= end_time raises ValueError."""
+        with self.assertRaises(ValueError):
+            tools_ffmpeg_extract_subclip(self.test_file, 10.0, 5.0)
+
+        with self.assertRaises(ValueError):
+            tools_ffmpeg_extract_subclip(self.test_file, 5.0, 5.0)
+
+    def test_subclip_success(self):
+        """Test successful subclip extraction."""
+        target = "output/subclip.mp4"
+        # Ensure target dir exists
+        os.makedirs("output", exist_ok=True)
+
+        tools_ffmpeg_extract_subclip(self.test_file, 0.0, 5.0, targetname=target)
+
+        # Verify underlying function was called
+        # The mock is on the module, but the function imported in server.py is what is called.
+        # Since we mocked the module before import, server.py imported the mock.
+        mock_ffmpeg_tools.ffmpeg_extract_subclip.assert_called_once()
+        args, kwargs = mock_ffmpeg_tools.ffmpeg_extract_subclip.call_args
+
+        # args[0] is filename (validated path)
+        self.assertTrue(args[0].endswith(self.test_file))
+        # args[1] start, args[2] end
+        self.assertEqual(args[1], 0.0)
+        self.assertEqual(args[2], 5.0)
+        # outputfile kwarg
+        self.assertTrue(kwargs['outputfile'].endswith(target))
 
 if __name__ == '__main__':
     unittest.main()
