@@ -15,12 +15,19 @@ class Kaleidoscope(Effect):
         self.n_slices = n_slices
         self.x = x
         self.y = y
+        self._cache = {}
 
     def apply(self, clip):
         def process_frame(get_frame, t):
             frame = get_frame(t)
             h, w = frame.shape[:2]
             
+            # Check cache
+            cache_key = (w, h, self.n_slices, self.x, self.y)
+            if cache_key in self._cache:
+                ix, iy = self._cache[cache_key]
+                return frame[iy, ix]
+
             x_center = self.x if self.x is not None else w // 2
             y_center = self.y if self.y is not None else h // 2
             
@@ -60,6 +67,9 @@ class Kaleidoscope(Effect):
             ix = np.clip(ix, 0, w - 1)
             iy = np.clip(iy, 0, h - 1)
             
+            # Update cache
+            self._cache[cache_key] = (ix, iy)
+
             # Sample input frame at calculated source indices
             return frame[iy, ix]
 
