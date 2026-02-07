@@ -32,12 +32,18 @@ class RGBSync(Effect):
             # Get frames for each channel based on time offsets
             # We use float32 for processing and then clip back to uint8
             channels = []
+            # Local cache to avoid redundant frame decoding if time offsets are same
+            frames_cache = {}
+
             for i in range(3):
                 # Calculate the timestamp for this specific channel
                 # Ensure it stays within clip bounds [0, duration]
                 channel_t = max(0, min(clip.duration, t + self.time_offsets[i])) if clip.duration else t + self.time_offsets[i]
                 
-                frame = get_frame(channel_t)
+                if channel_t not in frames_cache:
+                    frames_cache[channel_t] = get_frame(channel_t)
+
+                frame = frames_cache[channel_t]
                 channel_data = frame[:, :, i]
                 
                 # Apply spatial offset using np.roll (wraps around)
