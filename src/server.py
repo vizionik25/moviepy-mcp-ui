@@ -23,7 +23,10 @@ MAX_CLIPS = 100
 
 def validate_path(filename: str) -> str:
     """Basic path validation to prevent traversal outside the project directory or temp."""
-    path = Path(filename).resolve()
+    try:
+        path = Path(filename).resolve()
+    except (RuntimeError, OSError) as e:
+        raise ValueError(f"Invalid path '{filename}': {e}")
     cwd = Path.cwd().resolve()
     tmp = Path("/tmp").resolve() if Path("/tmp").exists() else Path("/tmp")
 
