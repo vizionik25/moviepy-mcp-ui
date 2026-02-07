@@ -43,18 +43,19 @@ def get_openai_tools():
 @app.post("/api/chat")
 async def chat(request: ChatRequest):
     model = None
-    if request.api_keys.get("openai"):
-        os.environ["OPENAI_API_KEY"] = request.api_keys["openai"]
-        model = "gpt-4o"
-    if request.api_keys.get("anthropic"):
-        os.environ["ANTHROPIC_API_KEY"] = request.api_keys["anthropic"]
-        if not model: model = "claude-3-5-sonnet-20240620"
-    if request.api_keys.get("gemini"):
-        os.environ["GEMINI_API_KEY"] = request.api_keys["gemini"]
-        os.environ["GOOGLE_API_KEY"] = request.api_keys["gemini"]
-        if not model: model = "gemini/gemini-1.5-pro"
+    api_key = None
 
-    if not model:
+    if request.api_keys.get("openai"):
+        model = "gpt-4o"
+        api_key = request.api_keys["openai"]
+    elif request.api_keys.get("anthropic"):
+        model = "claude-3-5-sonnet-20240620"
+        api_key = request.api_keys["anthropic"]
+    elif request.api_keys.get("gemini"):
+        model = "gemini/gemini-1.5-pro"
+        api_key = request.api_keys["gemini"]
+
+    if not model or not api_key:
         raise HTTPException(status_code=400, detail="No valid API key provided")
 
     tools = get_openai_tools()
@@ -65,7 +66,8 @@ async def chat(request: ChatRequest):
             model=model,
             messages=messages,
             tools=tools,
-            tool_choice="auto"
+            tool_choice="auto",
+            api_key=api_key
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -106,7 +108,8 @@ async def chat(request: ChatRequest):
             response = await litellm.acompletion(
                 model=model,
                 messages=messages,
-                tools=tools
+                tools=tools,
+                api_key=api_key
             )
             return response.choices[0].message
         except Exception as e:
