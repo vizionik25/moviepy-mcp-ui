@@ -22,7 +22,20 @@ fastmcp_mock.FastMCP.return_value = mock_mcp_instance
 
 # Apply mocks to sys.modules
 sys.modules['fastmcp'] = fastmcp_mock
-sys.modules['moviepy'] = MagicMock()
+class MockEffect:
+    def __init__(self, *args, **kwargs):
+        pass
+
+moviepy_mock = MagicMock()
+moviepy_mock.__all__ = [
+    "ImageClip", "VideoFileClip", "ImageSequenceClip", "TextClip", "ColorClip",
+    "CompositeVideoClip", "clips_array", "concatenate_videoclips",
+    "CompositeAudioClip", "concatenate_audioclips", "AudioFileClip",
+    "vfx", "afx", "SubtitlesClip", "CreditsClip", "Effect"
+]
+moviepy_mock.ImageClip = MagicMock()
+moviepy_mock.Effect = MockEffect
+sys.modules['moviepy'] = moviepy_mock
 sys.modules['moviepy.video'] = MagicMock()
 sys.modules['moviepy.video.tools'] = MagicMock()
 sys.modules['moviepy.video.tools.drawing'] = MagicMock()
@@ -33,10 +46,12 @@ sys.modules['moviepy.video.tools.subtitles'] = MagicMock()
 sys.modules['moviepy.video.tools.credits'] = MagicMock()
 sys.modules['mcp_ui'] = MagicMock()
 sys.modules['mcp_ui.core'] = MagicMock()
-sys.modules['custom_fx'] = MagicMock()
 sys.modules['numpy'] = MagicMock()
 sys.modules['numexpr'] = MagicMock()
 sys.modules['pydantic'] = MagicMock()
+sys.modules['PIL'] = MagicMock()
+sys.modules['cv2'] = MagicMock()
+sys.modules['PIL'] = MagicMock()
 
 # Now import the functions to test
 from server import set_position, CLIPS, register_clip

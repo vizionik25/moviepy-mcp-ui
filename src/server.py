@@ -7,6 +7,7 @@ from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
 from moviepy.video.tools.subtitles import file_to_subtitles, SubtitlesClip
 from moviepy.video.tools.credits import CreditsClip
 import os
+import tempfile
 import ast
 import uuid
 import numpy as np
@@ -29,7 +30,7 @@ except OSError:
 def validate_write_path(filename: str) -> str:
     """Strict path validation for writing files.
 
-    Files must be written to the 'output' directory or '/tmp'.
+    Files must be written to the 'output' directory or temporary directory.
     This prevents overwriting source code or critical system files.
     """
     try:
@@ -37,11 +38,12 @@ def validate_write_path(filename: str) -> str:
     except (RuntimeError, OSError) as e:
         raise ValueError(f"Invalid path '{filename}': {e}")
 
-    tmp = Path("/tmp").resolve() if Path("/tmp").exists() else Path("/tmp")
+    tmp_dir = tempfile.gettempdir()
+    tmp = Path(tmp_dir).resolve() if Path(tmp_dir).exists() else Path(tmp_dir)
     output_dir = OUTPUT_DIR.resolve()
 
     if not (path.is_relative_to(output_dir) or path.is_relative_to(tmp)):
-        raise ValueError(f"Write access to path '{filename}' is denied. Files must be written to 'output/' or '/tmp/'.")
+        raise ValueError(f"Write access to path '{filename}' is denied. Files must be written to 'output/' or '{tmp_dir}'.")
 
     return str(path)
 
@@ -53,12 +55,14 @@ def validate_path(filename: str) -> str:
     except (RuntimeError, OSError) as e:
         raise ValueError(f"Invalid path '{filename}': {e}")
     cwd = Path.cwd().resolve()
-    tmp = Path("/tmp").resolve() if Path("/tmp").exists() else Path("/tmp")
+    tmp_dir = tempfile.gettempdir()
+    tmp = Path(tmp_dir).resolve() if Path(tmp_dir).exists() else Path(tmp_dir)
 
     if not (path.is_relative_to(cwd) or path.is_relative_to(tmp)):
-        raise ValueError(f"Access to path '{filename}' is denied. Path must be within the project directory or /tmp.")
+        raise ValueError(f"Access to path '{filename}' is denied. Path must be within the project directory or '{tmp_dir}'.")
 
     return str(path)
+
 
 def register_clip(clip):
     """Registers a clip in the global state and returns its ID."""

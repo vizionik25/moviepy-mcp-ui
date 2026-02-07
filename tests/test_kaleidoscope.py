@@ -11,6 +11,10 @@ from custom_fx.kaleidoscope import Kaleidoscope
 
 class TestKaleidoscope(unittest.TestCase):
     def setUp(self):
+        # Check if numpy is mocked
+        if isinstance(np, MagicMock) or hasattr(np, 'reset_mock'):
+            self.skipTest("Numpy is mocked, skipping logic tests")
+
         # Create a mock clip with standard dimensions
         self.mock_clip = MagicMock()
         self.mock_clip.w = 100
@@ -25,8 +29,6 @@ class TestKaleidoscope(unittest.TestCase):
 
         # Create a dummy frame (100x100 RGB)
         frame = np.zeros((100, 100, 3), dtype=np.uint8)
-        # Fill with some pattern to verify transformation if needed,
-        # but here we just check it runs.
         frame[:] = [10, 20, 30]
 
         def get_frame(t):

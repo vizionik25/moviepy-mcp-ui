@@ -1,6 +1,7 @@
 import unittest
 import sys
 import os
+import tempfile
 from unittest.mock import MagicMock, patch
 
 # --- 1. Mock External Dependencies ---
@@ -17,7 +18,20 @@ mock_fastmcp.FastMCP.return_value = mock_mcp_instance
 sys.modules['fastmcp'] = mock_fastmcp
 
 # Mock other heavy dependencies
-sys.modules['moviepy'] = MagicMock()
+class MockEffect:
+    def __init__(self, *args, **kwargs):
+        pass
+
+moviepy_mock = MagicMock()
+moviepy_mock.__all__ = [
+    "ImageClip", "VideoFileClip", "ImageSequenceClip", "TextClip", "ColorClip",
+    "CompositeVideoClip", "clips_array", "concatenate_videoclips",
+    "CompositeAudioClip", "concatenate_audioclips", "AudioFileClip",
+    "vfx", "afx", "SubtitlesClip", "CreditsClip", "Effect"
+]
+moviepy_mock.ImageClip = MagicMock()
+moviepy_mock.Effect = MockEffect
+sys.modules['moviepy'] = moviepy_mock
 sys.modules['moviepy.video'] = MagicMock()
 sys.modules['moviepy.video.tools'] = MagicMock()
 sys.modules['moviepy.video.tools.drawing'] = MagicMock()
@@ -28,10 +42,12 @@ sys.modules['moviepy.video.tools.subtitles'] = MagicMock()
 sys.modules['moviepy.video.tools.credits'] = MagicMock()
 sys.modules['mcp_ui'] = MagicMock()
 sys.modules['mcp_ui.core'] = MagicMock()
-sys.modules['custom_fx'] = MagicMock()
 sys.modules['numpy'] = MagicMock()
 sys.modules['numexpr'] = MagicMock()
 sys.modules['pydantic'] = MagicMock()
+sys.modules['PIL'] = MagicMock()
+sys.modules['cv2'] = MagicMock()
+sys.modules['PIL'] = MagicMock()
 
 # --- 2. Import Target Functions ---
 # Add src to sys.path
@@ -49,6 +65,7 @@ class TestPathValidationUnit(unittest.TestCase):
         self.mock_cwd = MagicMock()
         self.mock_tmp = MagicMock()
         self.mock_output = MagicMock()
+        self.temp_dir = tempfile.gettempdir()
 
     @patch('server.Path')
     def test_validate_path_valid_cwd(self, MockPath):
@@ -64,14 +81,14 @@ class TestPathValidationUnit(unittest.TestCase):
         # MockPath behavior for:
         # 1. Path(filename).resolve()
         # 2. Path.cwd().resolve()
-        # 3. Path("/tmp").resolve()
+        # 3. Path(tempfile.gettempdir()).resolve()
 
         # We use side_effect on the constructor to return different mocks based on input
         def path_constructor_side_effect(arg=None):
             m = MagicMock()
             if arg == filename:
                 m.resolve.return_value = mock_resolved_file
-            elif arg == "/tmp":
+            elif arg == self.temp_dir:
                 m.exists.return_value = True
                 m.resolve.return_value = mock_resolved_tmp
             return m
@@ -95,9 +112,9 @@ class TestPathValidationUnit(unittest.TestCase):
 
     @patch('server.Path')
     def test_validate_path_valid_tmp(self, MockPath):
-        """Test validate_path with a file inside /tmp."""
+        """Test validate_path with a file inside temporary directory."""
         # Arrange
-        filename = "/tmp/safe_file.txt"
+        filename = os.path.join(self.temp_dir, "safe_file.txt")
 
         mock_resolved_file = MagicMock()
         mock_resolved_cwd = MagicMock()
@@ -107,7 +124,7 @@ class TestPathValidationUnit(unittest.TestCase):
             m = MagicMock()
             if arg == filename:
                 m.resolve.return_value = mock_resolved_file
-            elif arg == "/tmp":
+            elif arg == self.temp_dir:
                 m.exists.return_value = True
                 m.resolve.return_value = mock_resolved_tmp
             return m
@@ -145,7 +162,7 @@ class TestPathValidationUnit(unittest.TestCase):
             m = MagicMock()
             if arg == filename:
                 m.resolve.return_value = mock_resolved_file
-            elif arg == "/tmp":
+            elif arg == self.temp_dir:
                 m.exists.return_value = True
                 m.resolve.return_value = mock_resolved_tmp
             return m
@@ -198,7 +215,7 @@ class TestPathValidationUnit(unittest.TestCase):
             m = MagicMock()
             if arg == filename:
                 m.resolve.return_value = mock_resolved_file
-            elif arg == "/tmp":
+            elif arg == self.temp_dir:
                 m.exists.return_value = True
                 m.resolve.return_value = mock_resolved_tmp
             return m
@@ -233,7 +250,7 @@ class TestPathValidationUnit(unittest.TestCase):
             m = MagicMock()
             if arg == filename:
                 m.resolve.return_value = mock_resolved_file
-            elif arg == "/tmp":
+            elif arg == self.temp_dir:
                 m.exists.return_value = True
                 m.resolve.return_value = mock_resolved_tmp
             return m

@@ -8,7 +8,20 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
 
 # Mock modules
 sys.modules['fastmcp'] = MagicMock()
-sys.modules['moviepy'] = MagicMock()
+class MockEffect:
+    def __init__(self, *args, **kwargs):
+        pass
+
+moviepy_mock = MagicMock()
+moviepy_mock.__all__ = [
+    "ImageClip", "VideoFileClip", "ImageSequenceClip", "TextClip", "ColorClip",
+    "CompositeVideoClip", "clips_array", "concatenate_videoclips",
+    "CompositeAudioClip", "concatenate_audioclips", "AudioFileClip",
+    "vfx", "afx", "SubtitlesClip", "CreditsClip", "Effect"
+]
+moviepy_mock.ImageClip = MagicMock()
+moviepy_mock.Effect = MockEffect
+sys.modules['moviepy'] = moviepy_mock
 sys.modules['moviepy.video'] = MagicMock()
 sys.modules['moviepy.video.io'] = MagicMock()
 sys.modules['moviepy.video.io.ffmpeg_tools'] = MagicMock()
@@ -19,10 +32,11 @@ sys.modules['moviepy.video.tools.subtitles'] = MagicMock()
 sys.modules['moviepy.video.tools.credits'] = MagicMock()
 sys.modules['mcp_ui'] = MagicMock()
 sys.modules['mcp_ui.core'] = MagicMock()
-sys.modules['custom_fx'] = MagicMock()
 sys.modules['numpy'] = MagicMock()
 sys.modules['numexpr'] = MagicMock()
 sys.modules['pydantic'] = MagicMock()
+sys.modules['PIL'] = MagicMock()
+sys.modules['cv2'] = MagicMock()
 
 # Import server after mocking
 from server import video_file_clip, validate_path
@@ -35,19 +49,8 @@ class TestVideoIO(unittest.TestCase):
         if os.path.exists(non_existent_file):
             os.remove(non_existent_file)
 
-        validated = validate_path(non_existent_file)
-        print(f"DEBUG: validated path: {validated}")
-        print(f"DEBUG: exists? {os.path.exists(validated)}")
-
-        try:
+        with self.assertRaises(FileNotFoundError):
             video_file_clip(non_existent_file)
-            print("DEBUG: video_file_clip did NOT raise exception")
-        except FileNotFoundError:
-            print("DEBUG: Caught FileNotFoundError")
-            raise
-        except Exception as e:
-            print(f"DEBUG: Caught unexpected exception: {type(e)}: {e}")
-            raise
 
 if __name__ == '__main__':
     unittest.main()

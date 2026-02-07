@@ -1,6 +1,7 @@
 import unittest
 import sys
 import os
+import tempfile
 from unittest.mock import MagicMock, patch
 
 # Add src to sys.path
@@ -22,7 +23,20 @@ fastmcp_mock.FastMCP.return_value = mock_mcp_instance
 
 # Apply mocks to sys.modules
 sys.modules['fastmcp'] = fastmcp_mock
-sys.modules['moviepy'] = MagicMock()
+class MockEffect:
+    def __init__(self, *args, **kwargs):
+        pass
+
+moviepy_mock = MagicMock()
+moviepy_mock.__all__ = [
+    "ImageClip", "VideoFileClip", "ImageSequenceClip", "TextClip", "ColorClip",
+    "CompositeVideoClip", "clips_array", "concatenate_videoclips",
+    "CompositeAudioClip", "concatenate_audioclips", "AudioFileClip",
+    "vfx", "afx", "SubtitlesClip", "CreditsClip", "Effect"
+]
+moviepy_mock.ImageClip = MagicMock()
+moviepy_mock.Effect = MockEffect
+sys.modules['moviepy'] = moviepy_mock
 sys.modules['moviepy.video'] = MagicMock()
 sys.modules['moviepy.video.tools'] = MagicMock()
 sys.modules['moviepy.video.tools.drawing'] = MagicMock()
@@ -33,16 +47,19 @@ sys.modules['moviepy.video.tools.subtitles'] = MagicMock()
 sys.modules['moviepy.video.tools.credits'] = MagicMock()
 sys.modules['mcp_ui'] = MagicMock()
 sys.modules['mcp_ui.core'] = MagicMock()
-sys.modules['custom_fx'] = MagicMock()
 sys.modules['numpy'] = MagicMock()
 sys.modules['numexpr'] = MagicMock()
 sys.modules['pydantic'] = MagicMock()
+sys.modules['PIL'] = MagicMock()
+sys.modules['cv2'] = MagicMock()
+sys.modules['PIL'] = MagicMock()
 
 from server import write_videofile, CLIPS
 
 class TestSecurityFix(unittest.TestCase):
     def setUp(self):
         CLIPS.clear()
+        self.temp_dir = tempfile.gettempdir()
 
     def test_ffmpeg_params_rejected(self):
         """
@@ -53,9 +70,10 @@ class TestSecurityFix(unittest.TestCase):
         clip_id = "test_clip_id"
         CLIPS[clip_id] = mock_clip
 
-        dangerous_params = ["-f", "image2", "/tmp/hacked.jpg"]
+        dangerous_params = ["-f", "image2", os.path.join(self.temp_dir, "hacked.jpg")]
+        output_path = os.path.join(self.temp_dir, "output.mp4")
 
-        with patch('server.validate_write_path', return_value='/tmp/output.mp4'):
+        with patch('server.validate_write_path', return_value=output_path):
             with self.assertRaises(TypeError) as cm:
                 write_videofile(
                     clip_id=clip_id,
@@ -74,7 +92,9 @@ class TestSecurityFix(unittest.TestCase):
         clip_id = "test_clip_id"
         CLIPS[clip_id] = mock_clip
 
-        with patch('server.validate_write_path', return_value='/tmp/output.mp4'):
+        output_path = os.path.join(self.temp_dir, "output.mp4")
+
+        with patch('server.validate_write_path', return_value=output_path):
             result = write_videofile(
                 clip_id=clip_id,
                 filename="output.mp4",
@@ -87,7 +107,7 @@ class TestSecurityFix(unittest.TestCase):
             # Verify internal call arguments
             mock_clip.write_videofile.assert_called_once()
             call_args = mock_clip.write_videofile.call_args
-            self.assertEqual(call_args.kwargs['filename'], '/tmp/output.mp4')
+            self.assertEqual(call_args.kwargs['filename'], output_path)
             self.assertEqual(call_args.kwargs['fps'], 30.0)
             self.assertEqual(call_args.kwargs['codec'], 'libx264')
 

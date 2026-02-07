@@ -24,7 +24,20 @@ fastmcp_mock.FastMCP.return_value = mock_mcp_instance
 
 # Apply mocks to sys.modules
 sys.modules['fastmcp'] = fastmcp_mock
-sys.modules['moviepy'] = MagicMock()
+class MockEffect:
+    def __init__(self, *args, **kwargs):
+        pass
+
+moviepy_mock = MagicMock()
+moviepy_mock.__all__ = [
+    "ImageClip", "VideoFileClip", "ImageSequenceClip", "TextClip", "ColorClip",
+    "CompositeVideoClip", "clips_array", "concatenate_videoclips",
+    "CompositeAudioClip", "concatenate_audioclips", "AudioFileClip",
+    "vfx", "afx", "SubtitlesClip", "CreditsClip", "Effect"
+]
+moviepy_mock.ImageClip = MagicMock()
+moviepy_mock.Effect = MockEffect
+sys.modules['moviepy'] = moviepy_mock
 sys.modules['moviepy.video'] = MagicMock()
 sys.modules['moviepy.video.tools'] = MagicMock()
 sys.modules['moviepy.video.tools.drawing'] = MagicMock()
@@ -35,17 +48,20 @@ sys.modules['moviepy.video.tools.subtitles'] = MagicMock()
 sys.modules['moviepy.video.tools.credits'] = MagicMock()
 sys.modules['mcp_ui'] = MagicMock()
 sys.modules['mcp_ui.core'] = MagicMock()
-sys.modules['custom_fx'] = MagicMock()
 sys.modules['numpy'] = MagicMock()
 sys.modules['numexpr'] = MagicMock()
 sys.modules['pydantic'] = MagicMock()
+sys.modules['PIL'] = MagicMock()
+sys.modules['cv2'] = MagicMock()
+sys.modules['PIL'] = MagicMock()
 
 from server import validate_path, validate_write_path, OUTPUT_DIR, delete_clip, CLIPS, register_clip
 
 class TestValidatePath(unittest.TestCase):
     def setUp(self):
         self.cwd = Path.cwd().resolve()
-        self.tmp = Path("/tmp").resolve() if Path("/tmp").exists() else Path("/tmp")
+        self.temp_dir = tempfile.gettempdir()
+        self.tmp = Path(self.temp_dir).resolve() if Path(self.temp_dir).exists() else Path(self.temp_dir)
 
     def test_valid_path_in_cwd(self):
         """Test a valid file path within the current working directory."""
@@ -61,11 +77,11 @@ class TestValidatePath(unittest.TestCase):
                 os.remove(filename)
 
     def test_valid_path_in_tmp(self):
-        """Test a valid file path within /tmp."""
-        if not os.path.exists("/tmp"):
-            self.skipTest("/tmp does not exist")
+        """Test a valid file path within temporary directory."""
+        if not os.path.exists(self.temp_dir):
+            self.skipTest(f"{self.temp_dir} does not exist")
 
-        with tempfile.NamedTemporaryFile(dir="/tmp", delete=False) as tmp_file:
+        with tempfile.NamedTemporaryFile(dir=self.temp_dir, delete=False) as tmp_file:
             tmp_path = tmp_file.name
 
         try:
@@ -166,7 +182,8 @@ class TestValidatePath(unittest.TestCase):
 class TestValidateWritePath(unittest.TestCase):
     def setUp(self):
         self.output_dir = OUTPUT_DIR.resolve()
-        self.tmp = Path("/tmp").resolve() if Path("/tmp").exists() else Path("/tmp")
+        self.temp_dir = tempfile.gettempdir()
+        self.tmp = Path(self.temp_dir).resolve() if Path(self.temp_dir).exists() else Path(self.temp_dir)
         # Ensure output dir exists (it should, but just in case)
         self.output_dir.mkdir(exist_ok=True)
 
@@ -184,10 +201,10 @@ class TestValidateWritePath(unittest.TestCase):
         self.assertEqual(result, str(self.output_dir / "test.mp4"))
 
     def test_write_to_tmp(self):
-        """Test writing to /tmp."""
-        if not os.path.exists("/tmp"):
-            self.skipTest("/tmp does not exist")
-        filename = "/tmp/test.mp4"
+        """Test writing to temporary directory."""
+        if not os.path.exists(self.temp_dir):
+            self.skipTest(f"{self.temp_dir} does not exist")
+        filename = os.path.join(self.temp_dir, "test.mp4")
         result = validate_write_path(filename)
         self.assertEqual(result, str(self.tmp / "test.mp4"))
 
