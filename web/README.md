@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# mcp-ui-moviepy Frontend
+
+This is the React/Next.js frontend for the **mcp-ui-moviepy** project. It provides a user interface to interact with the MoviePy MCP server, visualize clips, and manage video editing workflows.
+
+For full project documentation, including backend setup and usage, please refer to the main [README.md](../README.md).
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+-   **Node.js**: Version 18 or higher.
+-   **npm**: Package manager (or yarn/pnpm/bun).
+
+### Installation
+
+Navigate to the `web` directory and install dependencies:
+
+```bash
+cd web
+npm install
+```
+
+### Running Development Server
+
+To start the frontend development server independently:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Building for Production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+To create an optimized production build:
 
-## Learn More
+```bash
+npm run build
+```
 
-To learn more about Next.js, take a look at the following resources:
+Then start the production server:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm start
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Structure
 
-## Deploy on Vercel
+-   `src/app`: Next.js App Router pages and layouts.
+-   `src/components`: Reusable UI components.
+-   `src/lib`: Utility functions and API clients.
+-   `src/hooks`: Custom React hooks.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Integration with MCP Server
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The frontend communicates with the backend API server (running on `http://localhost:8000`) to execute MoviePy commands and retrieve clip data. Ensure the backend is running for full functionality.
