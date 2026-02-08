@@ -5,15 +5,19 @@ import litellm
 import json
 import ast
 import asyncio
+import os
+import sys
 from typing import List, Dict, Any, Optional
 
 from .server import mcp
 
 app = FastAPI()
 
+ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -66,7 +70,8 @@ async def chat(request: ChatRequest):
             api_key=api_key
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Error in chat completion: {e}", file=sys.stderr)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
     response_message = response.choices[0].message
 
@@ -109,7 +114,8 @@ async def chat(request: ChatRequest):
             )
             return response.choices[0].message
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            print(f"Error in chat completion (tool response): {e}", file=sys.stderr)
+            raise HTTPException(status_code=500, detail="Internal Server Error")
 
     return response_message
 
