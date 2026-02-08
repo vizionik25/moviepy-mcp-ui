@@ -44,10 +44,10 @@ export function LibraryPanel({ className }: LibraryPanelProps) {
         <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Media</h2>
             <div className="flex gap-1">
-                <Button variant="ghost" size="icon" onClick={() => fetchClips()} disabled={loading} className="h-7 w-7">
+                <Button variant="ghost" size="icon" onClick={() => fetchClips()} disabled={loading} className="h-7 w-7" aria-label="Refresh clips">
                     <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7">
+                <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Add clip">
                     <Plus className="h-3.5 w-3.5" />
                 </Button>
             </div>

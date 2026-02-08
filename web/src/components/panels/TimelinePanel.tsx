@@ -13,17 +13,17 @@ export function TimelinePanel({ className }: TimelinePanelProps) {
       {/* Timeline Toolbar */}
       <div className="h-10 border-b flex items-center justify-between px-2 bg-muted/20">
         <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-7 w-7"><MousePointer2 className="h-3.5 w-3.5" /></Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7"><Scissors className="h-3.5 w-3.5" /></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Select tool"><MousePointer2 className="h-3.5 w-3.5" /></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Razor tool"><Scissors className="h-3.5 w-3.5" /></Button>
             <div className="w-px h-4 bg-border mx-1" />
-            <Button variant="ghost" size="icon" className="h-7 w-7"><GripHorizontal className="h-3.5 w-3.5" /></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Hand tool"><GripHorizontal className="h-3.5 w-3.5" /></Button>
         </div>
         <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-7 w-7"><ZoomOut className="h-3.5 w-3.5" /></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Zoom out"><ZoomOut className="h-3.5 w-3.5" /></Button>
             <div className="w-24 h-1 bg-muted rounded-full overflow-hidden">
                 <div className="w-1/3 h-full bg-primary/50" />
             </div>
-            <Button variant="ghost" size="icon" className="h-7 w-7"><ZoomIn className="h-3.5 w-3.5" /></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Zoom in"><ZoomIn className="h-3.5 w-3.5" /></Button>
         </div>
       </div>
 
