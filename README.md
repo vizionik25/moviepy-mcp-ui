@@ -1,4 +1,4 @@
-# mcp-ui-moviepy
+# moviepy-mcp-ui
 
 A powerful **Model Context Protocol (MCP)** server that exposes **MoviePy** functionalities as tools for LLMs, complete with a built-in React/Next.js UI for visualization and interaction.
 
@@ -29,19 +29,13 @@ This project enables Large Language Models (LLMs) to perform complex video editi
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/yourusername/mcp-ui-moviepy.git
-    cd mcp-ui-moviepy
+    git clone https://github.com/yourusername/moviepy-mcp-ui.git
+    cd moviepy-mcp-ui
     ```
-
 2.  **Install Python dependencies (using `uv`):**
     ```bash
     uv sync
     ```
-    Alternatively, using pip:
-    ```bash
-    pip install -r requirements.txt
-    ```
-
 3.  **Install Frontend dependencies:**
     ```bash
     cd web
@@ -58,34 +52,47 @@ You can start both the backend MCP server and the frontend UI with a single comm
 ```bash
 # Using uv (recommended)
 uv run run.py
-
-# Or using python directly
-python run.py
 ```
-
 This will launch:
 -   **Backend API**: http://localhost:8000
 -   **Frontend UI**: http://localhost:3000
+The frontend UI has a built in MCP Client meaning everything works out the box after you add your API Key from your LLM provider. 
 
-### Using with MCP Clients (e.g., Claude Desktop)
+### Alternatively you can use the MCP Server with other clients
+## Using with Claude Desktop, VSCode, etc...
+First you will need to decide if you want to run it as a 'stdio', 'sse', or 'http'(recommended) implementation. Unless you will be working with 
+large files or many files to where you need the speed of 'stdio' offers, than it's recommended to use 'http'. Once you've decided on the transport
+to use let's say 'http'. You'll first need to spin up the server like so:
 
-To use this server with Claude Desktop, add the following configuration to your `claude_desktop_config.json`:
+```bash
+uv run src/server.py --transport="http" --host="0.0.0.0" --port=8080
+```
+
+Then use this server with Claude Desktop, add the following configuration to your `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "moviepy": {
-      "command": "uv",
+      "url": "http://localhost:8080/mcp"
+    }
+  }
+}
+```
+Or if you are using stdio then you can omit spinning up the server manuallyand add this to your config.json:
+```json
+{
+  "mcpServers": {
+    "moviepy": {
+      "command": "/full/path/to/your/projects/venv/uv",
       "args": [
         "run",
-        "src/server.py"
+        "/full/path/to/src/server.py"
       ]
     }
   }
 }
 ```
-
-Make sure to provide the absolute path to your project directory if `uv` is not in your global path or if you are running from a different location.
 
 ### Environment Variables
 
