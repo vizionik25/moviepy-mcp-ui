@@ -1,4 +1,4 @@
-# mcp-ui-moviepy Frontend
+#moviepy-mcp-ui Frontend
 
 This is the React/Next.js frontend for the **mcp-ui-moviepy** project. It provides a user interface to interact with the MoviePy MCP server, visualize clips, and manage video editing workflows.
 
