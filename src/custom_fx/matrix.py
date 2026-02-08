@@ -40,6 +40,11 @@ class Matrix(Effect):
         self.char_w = 0
         self.char_h = 0
 
+    def _ensure_numpy_rgb(self):
+        """Ensures self.rgb is a numpy array for vectorized operations."""
+        if not isinstance(self.rgb, np.ndarray):
+            self.rgb = np.array(self.rgb, dtype=np.uint8)
+
     def _init_atlas(self):
         """Pre-renders the character set into a font atlas for fast blitting."""
         try:
@@ -62,6 +67,7 @@ class Matrix(Effect):
             self._atlas[i] = np.array(img)
 
     def apply(self, clip):
+        self._ensure_numpy_rgb()
         if self._atlas is None:
             self._init_atlas()
             
@@ -78,6 +84,9 @@ class Matrix(Effect):
         # Static grid for character randomization
         base_char_grid = np.random.randint(0, len(self.chars), (rows, cols))
 
+        # Pre-calculate row Y coordinates (moved out of process_frame)
+        row_y = np.arange(rows) * self.char_h
+
         def process_frame(get_frame, t):
             frame = get_frame(t)
             
@@ -85,9 +94,6 @@ class Matrix(Effect):
             # Time-based position of the 'lead' for each column
             trail_len = h // 2
             lead_y = (col_speeds * t + col_offsets) % (h + trail_len)
-            
-            # Create a Y-coordinate grid for the rows
-            row_y = np.arange(rows) * self.char_h
             
             # Calculate distance from each cell to its column's lead position
             # Shape: (rows, cols)
@@ -113,26 +119,40 @@ class Matrix(Effect):
             # Pick character bitmaps from atlas: (rows, cols, char_h, char_w)
             char_slices = self._atlas[char_indices]
             
-            # Apply brightness: (rows, cols, char_h, char_w)
-            rain_mask = (char_slices.astype(np.float32) * brightness[:, :, None, None])
+            # Apply brightness using integer math: (rows, cols, char_h, char_w)
+            # Scale brightness by 256 for fixed-point arithmetic
+            brightness_int = (brightness * 256).astype(np.uint16)
+
+            # rain_mask_int fits in uint16 after shift (max ~360)
+            # char_slices (uint8) * brightness_int (uint16) -> temporary uint32/int64
+            rain_mask_int = (char_slices.astype(np.uint32) * brightness_int[:, :, None, None]) >> 8
             
             # Reshape/Transpose to form the full rain image
             # (rows, cols, char_h, char_w) -> (rows, char_h, cols, char_w) -> (H, W)
-            rain_layer = rain_mask.transpose(0, 2, 1, 3).reshape(rows * self.char_h, cols * self.char_w)
+            rain_layer_int = rain_mask_int.transpose(0, 2, 1, 3).reshape(rows * self.char_h, cols * self.char_w)
             
             # Crop to frame size
-            rain_layer = rain_layer[:h, :w]
+            rain_layer_int = rain_layer_int[:h, :w]
             
             # 4. Coloring and Compositing
-            # Convert to RGB and apply color
-            rain_rgb = (rain_layer[:, :, None] * self.rgb).astype(np.uint8)
+            # Apply color: (rain_layer_int * rgb) >> 8
+            # rain_layer_int is effectively 0-360 range (scaled by brightness)
+            # We use uint32 for multiplication to avoid overflow, then shift back to 0-255 range.
+            # NOTE: Original implementation caused integer overflow/wrapping for bright spots (e.g. 357 * 255 -> wrapped).
+            # This implementation clips values to 255, producing correct saturation instead of dark artifacts.
+            rain_rgb_temp = (rain_layer_int[:, :, None].astype(np.uint32) * self.rgb.astype(np.uint32)) >> 8
+
+            # Clip to ensure valid uint8 range (handles brightness > 1.0 correctly)
+            rain_rgb = np.clip(rain_rgb_temp, 0, 255).astype(np.uint8)
             
             # Composite with original frame
             # We use an additive blend but slightly dim the background for visibility
-            dimmed_bg = (frame.astype(np.float32) * 0.8).astype(np.uint8)
+            # frame * 0.8 ~= (frame * 205) >> 8. Use uint16 to prevent overflow before shift.
+            dimmed_bg = (frame.astype(np.uint16) * 205 >> 8).astype(np.uint8)
             
-            # Additive blend
-            out = np.clip(dimmed_bg.astype(np.int16) + rain_rgb.astype(np.int16), 0, 255).astype(np.uint8)
+            # Additive blend with clipping
+            # Use uint16 to prevent overflow during addition
+            out = np.clip(dimmed_bg.astype(np.uint16) + rain_rgb.astype(np.uint16), 0, 255).astype(np.uint8)
             
             return out
 
